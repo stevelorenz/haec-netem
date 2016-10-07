@@ -1,0 +1,266 @@
+#!/bin/bash
+# Control Workers on HAEC Playground
+
+# === Constants Definition ===
+# -----------------------------------------------
+# CONNECTOR 1
+CHNL_1=19    # IN1
+CHNL_2=173   # IN2
+CHNL_3=171   # IN3
+CHNL_4=172   # IN4
+
+# CONNECTOR 2
+CHNL_5=23    # IN4
+CHNL_6=24    # IN3
+CHNL_7=190   # IN2
+CHNL_8=25    # IN1
+
+# CONNECTOR 3
+CHNL_9=18    # IN1
+CHNL_10=174  # IN2
+CHNL_11=21   # IN3
+CHNL_12=22   # IN4
+
+# CONNECTOR 4
+CHNL_13=31   # IN1
+CHNL_14=30   # IN2
+CHNL_15=28   # IN3
+CHNL_16=191  # IN4
+
+# Assumed that Addr of workers is continuous
+# The WORKER IP=NET_ADDR.(WORKER_NUM + BASE_HOST)
+NET_ADDR='192.168.0.'
+BASE_HOST=50  # basic host addr
+
+HOST_NAME='odroid'
+HOST_PASS='odroid'
+# -----------------------------------------------
+
+# === Functions ===
+# -----------------------------------------------
+check_root() {
+  if [[ "$(whoami)" != "root" ]]; then
+    (>&2 echo "error, this option needs root authority")
+    (>&2 echo "run with sudo or root user")
+    exit
+  fi
+}
+
+#######################################
+# Power management of works
+#   turn_range_up()
+#   turn_range_down()
+#
+# Arguments:
+#   start_num
+#   end_num
+#######################################
+turn_range_up() {
+  # single argument
+  if [[ "$2" == "" ]]; then
+    echo "worker $1 will be turned on..."
+
+    # use eval to get value from a variable use variable
+    eval "echo \$CHNL_$1 > /sys/class/gpio/export"
+    sleep 2
+    eval "echo out > /sys/class/gpio/gpio\$CHNL_$1/direction"
+    eval "echo \$CHNL_$1 > /sys/class/gpio/unexport"
+
+    echo "worker $1 has been turned on"
+
+  # two arguments, range of odroids
+  else
+    echo "worker $1 to $2 will be turned on..."
+
+    for i in $(seq "$1" "$2")
+    do
+      eval "echo \$CHNL_$i > /sys/class/gpio/export"
+      sleep 2
+      eval "echo out > /sys/class/gpio/gpio\$CHNL_$i/direction"
+      eval "echo \$CHNL_$i > /sys/class/gpio/unexport"
+    done
+
+    echo "worker $1 to $2 have been turned on"
+  fi
+}
+
+turn_range_down() {
+  if [[ "$2" == "" ]]; then
+    echo "worker $1 will be turned off"
+
+    eval "echo \$CHNL_$1 > /sys/class/gpio/export"
+    sleep 2
+    eval "echo 1 > /sys/class/gpio/gpio\$CHNL_$1/value"
+    eval "echo \$CHNL_$1 > /sys/class/gpio/unexport"
+
+    echo "worker $1 has been turned off"
+
+  # two arguments, range of odroids
+  else
+    echo "worker $1 to $2 will be turned off"
+
+    for i in $(seq "$1" "$2")
+    do
+      eval "echo \$CHNL_$i > /sys/class/gpio/export"
+      sleep 2
+      eval "echo 1 > /sys/class/gpio/gpio\$CHNL_$i/value"
+      eval "echo \$CHNL_$i > /sys/class/gpio/unexport"
+    done
+
+    echo "worker $1 to $2 have been turned off"
+  fi
+}
+
+#######################################
+# Run commands with root authority on workers
+#   should run locally without sudo
+#   mainly used for shutdown and reboot OS
+#   using sshpass to provide password
+#
+# Arguments:
+#   command
+#   start_num
+#   end_num
+#######################################
+
+worker_sudo() {
+  if [[ "$3" == "" ]]; then
+    worker_ip="$NET_ADDR$(($2 + $BASE_HOST))"
+    echo "$1 is executed on worker $2"
+    sshpass -p "$HOST_PASS" \
+      ssh "$HOST_NAME"@"$worker_ip" sudo $1
+    echo $HOST_NAME
+    echo $HOST_PASS
+  else
+    echo "$1 is executed on worker $2 to $3"
+    for host in $(seq "$2" "$3"); do
+      worker_ip="$NET_ADDR$(($host + $BASE_HOST))"
+      sshpass -p "$HOST_PASS" \
+        ssh "$HOST_NAME"@"$worker_ip" sudo $1
+    done
+  fi
+}
+
+ping_all_workers() {
+  for i in $(seq 1 16); do
+    worker_ip="$NET_ADDR$(($i + $BASE_HOST))"
+    ping -c 3 "$worker_ip" &> /dev/null
+    if [[ "$?" -eq 0 ]]; then
+      echo "worker $worker_ip is reachable"
+    else
+      echo "worker $worker_ip is unreachable"
+    fi
+  done
+}
+
+print_help() {
+  echo "Usage: worker-ctl -option args"
+  echo ""
+  echo "options:"
+  echo "  [-u up] turn on worker(s)"
+  echo "    args:"
+  echo "      start-end: for a range of workers, splitted with dash"
+  echo "      number: for a single worker"
+  echo "  [-d down] turn off worker(s)"
+  echo "    args: same as -u option"
+  echo "  [-s shutdown] shutdown the operating system"
+  echo "    args: same as -u option"
+  echo "  [-r reboot] reboot the operating system"
+  echo "    args: same as -u option"
+  echo "  [-p ping] check the availability of all workers"
+  echo "  [-h help] print help informations"
+
+  echo ""
+  echo "worker table"
+  echo "------------------------------------------"
+  echo "|01  02 | |03  04| XX |05  06 | |07  08|"
+  echo "|09  10 | |11  12| XX |13  14 | |15  16|"
+  echo "------------------------------------------"
+  echo "                          main controller"
+  echo "------------------------------------------"
+  echo
+}
+# -----------------------------------------------
+
+# === Arg Parser ===
+# -----------------------------------------------
+# use getopts, * only support short option
+while getopts "u:d:s:r:hp" opt; do
+  # case for options
+  case $opt in
+    # turn workers up
+    u)
+      check_root
+      set -f  # disable glob
+      IFS='-' # use dash as delimiter
+      array=($OPTARG)  # use the split+glob operator
+      unset IFS
+      # check arg numbers
+      if [[ ${#array[@]} -gt 2 ]]; then
+        echo "error: too many args, allow maximal two args"
+        exit
+      elif [[ ${#array[@]} -eq 1 ]]; then
+        turn_range_up "${array[0]}"
+      else
+        turn_range_up "${array[0]}" "${array[1]}"
+      fi
+      ;;
+    # turn workers down
+    d)
+      check_root
+      set -f  # disable glob
+      IFS='-'
+      array=($OPTARG)
+      unset IFS
+      if [[ ${#array[@]} -gt 2 ]]; then
+        echo "error: too many args, allow maximal two args"
+        exit
+      elif [[ ${#array[@]} -eq 1 ]]; then
+        turn_range_down "${array[0]}"
+      else
+        turn_range_down "${array[0]}" "${array[1]}"
+      fi
+      ;;
+    s)
+      set -f  # disable glob
+      IFS='-'
+      array=($OPTARG)
+      unset IFS
+      if [[ ${#array[@]} -gt 2 ]]; then
+        echo "error: too many args, allow maximal two args"
+        exit
+      elif [[ ${#array[@]} -eq 1 ]]; then
+        worker_sudo 'poweroff' "${array[0]}"
+      else
+        worker_sudo 'poweroff' "${array[0]}" "${array[1]}"
+      fi
+      ;;
+    r)
+      set -f  # disable glob
+      IFS='-'
+      array=($OPTARG)
+      unset IFS
+      if [[ ${#array[@]} -gt 2 ]]; then
+        echo "error: too many args, allow maximal two args"
+        exit
+      elif [[ ${#array[@]} -eq 1 ]]; then
+        worker_sudo 'reboot' "${array[0]}"
+      else
+        worker_sudo 'reboot' "${array[0]}" "${array[1]}"
+      fi
+      ;;
+
+    # check the availability of workers using ping
+    p)
+      ping_all_workers ;;
+
+    h)
+      print_help ;;
+  esac
+done
+
+# if no options, print help informations
+if [ $OPTIND -eq 1 ]; then
+  print_help
+fi
+# -----------------------------------------------

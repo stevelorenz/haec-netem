@@ -1,0 +1,27 @@
+# NetworkManger connection setting format on Worker
+
+[connection]
+id=ethernet_connection
+type=ethernet
+
+autoconnect=true
+autoconnect-priority=0
+
+permissions=
+secondaries=
+timestamp=1467048719
+
+[ethernet]
+duplex=full
+mac-address-blacklist=
+
+[ipv4]
+address1=192.168.0.51/24,192.168.0.200
+dns=8.8.8.8;
+dns-search=
+method=manual
+
+[ipv6]
+dns-search=
+ip6-privacy=0
+method=auto

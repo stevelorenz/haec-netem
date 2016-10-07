@@ -1,0 +1,89 @@
+==== 2016-08-09 15:07 ====
+--- Error Message ---
+--------------------------------------------------------------------------------
+INFO 173: --- stop current experiment
+Traceback (most recent call last):
+File "./run_tests.py", line 47, in <module>
+main()
+
+  File "./run_tests.py", line 40, in main
+  tests.bw_test(cluster, topo, (30, 20))
+  File "/home/odroid/haec-netem/fattree_test/tests.py", line 174, in bw_test
+  exp.stop()
+  File "/usr/local/lib/python2.7/dist-packages/MaxiNet-1.0-py2.7.egg/MaxiNet/Frontend/maxinet.py", line 1535, in stop
+  worker.stop()
+  File "/usr/local/lib/python2.7/dist-packages/MaxiNet-1.0-py2.7.egg/MaxiNet/Frontend/maxinet.py", line 351, in stop
+  return self.mininet.destroy_mininet()
+
+  File "/usr/local/lib/python2.7/dist-packages/Pyro4/core.py", line 171, in __call__
+  return self.__send(self.__name, args, kwargs)
+  File "/usr/local/lib/python2.7/dist-packages/Pyro4/core.py", line 412, in _pyroInvoke
+
+  msg = message.Message.recv(self._pyroConnection, [message.MSG_RESULT], hmac_key=self._pyroHmacKey)
+  File "/usr/local/lib/python2.7/dist-packages/Pyro4/message.py", line 167, in recv
+  msg = cls.from_header(connection.recv(cls.header_size))
+  File "/usr/local/lib/python2.7/dist-packages/Pyro4/socketutil.py", line 443, in recv
+  return receiveData(self.sock, size)
+  File "/usr/local/lib/python2.7/dist-packages/Pyro4/socketutil.py", line 157, in receiveData
+
+  raise ConnectionClosedError("receiving: connection lost: " + str(x))
+
+  Pyro4.errors.ConnectionClosedError: receiving: connection lost: [Errno 113] No route to host
+
+  INFO:MaxiNet.Frontend.maxinet:removed worker worker15
+  INFO:MaxiNet.Frontend.maxinet:removed worker worker13
+  INFO:MaxiNet.Frontend.maxinet:removed worker worker14
+  INFO:MaxiNet.Frontend.maxinet:removed worker worker16
+  Error in atexit._run_exitfuncs:
+
+Traceback (most recent call last):
+  File "/usr/lib/python2.7/atexit.py", line 24, in _run_exitfuncs
+  func(*targs, **kargs)
+  File "/usr/local/lib/python2.7/dist-packages/MaxiNet-1.0-py2.7.egg/MaxiNet/Frontend/maxinet.py", line 752, in _stop
+  self.remove_workers()
+  File "/usr/local/lib/python2.7/dist-packages/MaxiNet-1.0-py2.7.egg/MaxiNet/Frontend/maxinet.py", line 744, in remove_workers
+  self.remove_worker(self.worker[0])
+  File "/usr/local/lib/python2.7/dist-packages/MaxiNet-1.0-py2.7.egg/MaxiNet/Frontend/maxinet.py", line 729, in remove_worker
+  del self.hostname_to_worker[worker.hn()]
+  File "/usr/local/lib/python2.7/dist-packages/MaxiNet-1.0-py2.7.egg/MaxiNet/Frontend/maxinet.py", line 151, in hn
+  return self.server.get_hostname()
+  File "/usr/local/lib/python2.7/dist-packages/Pyro4/core.py", line 171, in __call__
+  return self.__send(self.__name, args, kwargs)
+  File "/usr/local/lib/python2.7/dist-packages/Pyro4/core.py", line 412, in _pyroInvoke
+  msg = message.Message.recv(self._pyroConnection, [message.MSG_RESULT], hmac_key=self._pyroHmacKey)
+  File "/usr/local/lib/python2.7/dist-packages/Pyro4/message.py", line 167, in recv
+  msg = cls.from_header(connection.recv(cls.header_size))
+  File "/usr/local/lib/python2.7/dist-packages/Pyro4/socketutil.py", line 443, in recv
+  return receiveData(self.sock, size)
+  File "/usr/local/lib/python2.7/dist-packages/Pyro4/socketutil.py", line 157, in receiveData
+  raise ConnectionClosedError("receiving: connection lost: " + str(x))
+  ConnectionClosedError: receiving: connection lost: [Errno 113] No route to host
+
+  Error in sys.exitfunc:
+  Traceback (most recent call last):
+  File "/usr/lib/python2.7/atexit.py", line 24, in _run_exitfuncs
+  func(*targs, **kargs)
+  File "/usr/local/lib/python2.7/dist-packages/MaxiNet-1.0-py2.7.egg/MaxiNet/Frontend/maxinet.py", line 752, in _stop
+  self.remove_workers()
+  File "/usr/local/lib/python2.7/dist-packages/MaxiNet-1.0-py2.7.egg/MaxiNet/Frontend/maxinet.py", line 744, in remove_workers
+  self.remove_worker(self.worker[0])
+  File "/usr/local/lib/python2.7/dist-packages/MaxiNet-1.0-py2.7.egg/MaxiNet/Frontend/maxinet.py", line 729, in remove_worker
+  del self.hostname_to_worker[worker.hn()]
+  File "/usr/local/lib/python2.7/dist-packages/MaxiNet-1.0-py2.7.egg/MaxiNet/Frontend/maxinet.py", line 151, in hn
+  return self.server.get_hostname()
+  File "/usr/local/lib/python2.7/dist-packages/Pyro4/core.py", line 171, in __call__
+  return self.__send(self.__name, args, kwargs)
+  File "/usr/local/lib/python2.7/dist-packages/Pyro4/core.py", line 412, in _pyroInvoke
+  msg = message.Message.recv(self._pyroConnection, [message.MSG_RESULT], hmac_key=self._pyroHmacKey)
+  File "/usr/local/lib/python2.7/dist-packages/Pyro4/message.py", line 167, in recv
+  msg = cls.from_header(connection.recv(cls.header_size))
+  File "/usr/local/lib/python2.7/dist-packages/Pyro4/socketutil.py", line 443, in recv
+  return receiveData(self.sock, size)
+  File "/usr/local/lib/python2.7/dist-packages/Pyro4/socketutil.py", line 157, in receiveData
+  raise ConnectionClosedError("receiving: connection lost: " + str(x))
+  Pyro4.errors.ConnectionClosedError: receiving: connection lost: [Errno 113] No route to host
+--------------------------------------------------------------------------------
+--- Analysis ---
+The breakdown of the Worker results in this ConnectionClosedError, The Frontend can not reach the remote Worker
+any more. There's no backup mechanism in current MaxiNet, so this should be improved.
+
